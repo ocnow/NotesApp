@@ -1,5 +1,5 @@
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
-import { fetchPosts, fetchPostsFromFirebase } from '~/utils/posts.js'
+import { fetchPostsFromFirebase } from '~/utils/posts.js'
 
 export const Route = createFileRoute('/_authed/posts')({
   loader: () => fetchPostsFromFirebase(),

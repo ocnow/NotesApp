@@ -10,6 +10,8 @@ import { createServerFn } from '@tanstack/react-start'
 import * as React from 'react'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary.js'
 import { NotFound } from '~/components/NotFound.js'
+// Import the new Searchbar component
+import { Searchbar } from '~/components/Searchbar.js';
 import appCss from '~/styles/app.css?url'
 import { seo } from '~/utils/seo.js'
 import { useAppSession } from '~/utils/session.js'
@@ -101,7 +103,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <div className="p-2 flex gap-2 text-lg">
+        {/* Added items-center for vertical alignment */}
+        <div className="p-2 flex gap-2 text-lg items-center">
           <Link
             to="/"
             activeProps={{
@@ -119,7 +122,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           >
             Posts
           </Link>
-          <div className="ml-auto">
+          <Searchbar />
+          {/* Added flex, items-center, gap for alignment */}
+          <div className="ml-auto flex items-center gap-2">
             {user ? (
               <>
                 <span className="mr-2">{user.email}</span>
