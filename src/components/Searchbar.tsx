@@ -1,40 +1,93 @@
-import * as React from 'react';
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { searchItems } from '~/utils/search'
+import { SearchItem } from '~/data/sampleData'
+import { Input } from '~/components/ui/input'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '~/components/ui/command'
 
 export function Searchbar() {
-  const [value, setValue] = React.useState('');
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [showResults, setShowResults] = useState(false)
+  const [searchResults, setSearchResults] = useState<SearchItem[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
 
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check for Cmd+K on Mac or Ctrl+K on other OS
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-        event.preventDefault(); // Prevent browser's default find behavior
-        inputRef.current?.focus();
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
-    // Cleanup listener on component unmount
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []); // Empty dependency array ensures this runs only once on mount
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const handleSearch = async (value: string) => {
+    setSearchQuery(value)
+    if (value.length > 0) {
+      const results = await searchItems({ data: value })
+      setSearchResults(results)
+      setShowResults(true)
+    } else {
+      setSearchResults([])
+      setShowResults(false)
+    }
+  }
+
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
 
   return (
-    <div className="relative w-full max-w-xs lg:max-w-sm ml-4"> {/* Added ml-4 for spacing */}
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Search..." // Placeholder text
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        // Tailwind classes inspired by shadcn/ui Input component
-        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500 dark:focus-visible:ring-gray-600"
-      />
-      {/* Keyboard shortcut hint */}
-      <kbd className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-        <span className="text-xs">⌘</span>K
-      </kbd>
+    <div className="relative w-[300px]">
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          placeholder="Search documentation..."
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          onFocus={() => searchQuery.length > 0 && setShowResults(true)}
+          className="w-full pr-12"
+        />
+        <kbd className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100 dark:bg-gray-800">
+          <span className="text-xs">{isMac ? '⌘' : 'Ctrl'}</span> K
+        </kbd>
+      </div>
+      {showResults && (
+        <div className="absolute top-[calc(100%+4px)] left-0 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
+          <Command>
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup>
+                {searchResults.map((item) => (
+                  <CommandItem
+                    key={item.id}
+                    onSelect={() => {
+                      setSearchQuery(item.title)
+                      setShowResults(false)
+                      inputRef.current?.focus()
+                      // You can add navigation or other actions here
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{item.title}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {item.category}
+                      </span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </div>
+      )}
     </div>
-  );
+  )
 }

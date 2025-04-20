@@ -122,7 +122,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           >
             Posts
           </Link>
-          <Searchbar />
+          {user && <Searchbar />}
           {/* Added flex, items-center, gap for alignment */}
           <div className="ml-auto flex items-center gap-2">
             {user ? (
