@@ -1,14 +1,16 @@
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
-import { fetchPostsFromFirebase } from '~/utils/posts.js'
+import { fetchPostsFromFirebase, postsQueryOptions } from '~/utils/posts.js'
 
 export const Route = createFileRoute('/_authed/posts')({
-  loader: () => fetchPostsFromFirebase(),
+  loader: async({context}) => {
+    await context.queryClient.ensureQueryData(postsQueryOptions())
+  },
   component: PostsComponent,
 })
 
 function PostsComponent() {
-  const posts = Route.useLoaderData()
-
+  const {data : posts} = useSuspenseQuery(postsQueryOptions())
   return (
     <div className="p-2 flex gap-2">
       <ul className="list-disc pl-4">
@@ -17,7 +19,7 @@ function PostsComponent() {
             return (
               <li key={post.id} className="whitespace-nowrap">
                 <Link
-                  to="/posts/$postId"
+                  to="/posts"
                   params={{
                     postId: post.id,
                   }}

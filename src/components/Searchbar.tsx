@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { searchItems } from '~/utils/search'
 import { SearchItem } from '~/data/sampleData'
 import { Input } from '~/components/ui/input'
@@ -10,19 +10,38 @@ import {
   CommandItem,
   CommandList,
 } from '~/components/ui/command'
+import { useQuery } from '@tanstack/react-query'
+
+const LoadingResults = () => {
+  return (
+            <>
+            <CommandItem>
+              <div className="h-4 w-full animate-pulse rounded-md bg-muted" />
+            </CommandItem>
+            <CommandItem>
+              <div className="h-4 w-full animate-pulse rounded-md bg-muted" />
+            </CommandItem>
+  </>
+  )
+}
 
 export function Searchbar() {
-  const [showResults, setShowResults] = useState(false)
-  const [searchResults, setSearchResults] = useState<SearchItem[]>([])
+  // const [searchResults, setSearchResults] = useState<SearchItem[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const [showResults, setShowResults] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         inputRef.current?.focus()
+      }
+
+      if(e.key === 'Escape') {
+        inputRef.current?.blur()
+        setShowResults(false)
       }
     }
 
@@ -32,15 +51,23 @@ export function Searchbar() {
 
   const handleSearch = async (value: string) => {
     setSearchQuery(value)
-    if (value.length > 0) {
-      const results = await searchItems({ data: value })
-      setSearchResults(results)
-      setShowResults(true)
-    } else {
-      setSearchResults([])
-      setShowResults(false)
-    }
+    // if (value.length > 0) {
+    //   const results = await searchItems({ data: value })
+    //   setSearchResults(results)
+    //   setShowResults(true)
+    // } else {
+    //   setSearchResults([])
+    //   setShowResults(false)
+    // }
   }
+
+  const { data: searchResults, isLoading,isSuccess,isFetching } = useQuery({
+    queryKey: ['search', searchQuery],
+    queryFn: () => searchItems({ data: searchQuery }),
+    staleTime: 0,
+    refetchOnMount : true,
+    refetchOnWindowFocus : true,
+  })
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
 
@@ -52,35 +79,36 @@ export function Searchbar() {
           placeholder="Search documentation..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
-          onFocus={() => searchQuery.length > 0 && setShowResults(true)}
+          onFocus={() => setShowResults(true)}
+          onBlur={() => {
+            setTimeout(() => setShowResults(false), 200)
+          }}
           className="w-full pr-12"
         />
         <kbd className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100 dark:bg-gray-800">
           <span className="text-xs">{isMac ? '⌘' : 'Ctrl'}</span> K
         </kbd>
       </div>
-      {showResults && (
+      {showResults && searchQuery.length > 0 && (
         <div className="absolute top-[calc(100%+4px)] left-0 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
           <Command>
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup>
-                {searchResults.map((item) => (
+                {(isLoading || isFetching) && <LoadingResults />}
+                {!(isLoading || isFetching) && searchResults && searchResults.map((item) => (
                   <CommandItem
-                    key={item.id}
-                    onSelect={() => {
-                      setSearchQuery(item.title)
-                      setShowResults(false)
-                      inputRef.current?.focus()
-                      // You can add navigation or other actions here
-                    }}
+                    key={item.uid}
+                    // onSelect={() => {
+                    //   console.log('item selected:', item);
+                    //   setSearchQuery(item.email?.split("@")[0]!)
+                    //   setShowResults(false);
+                    //   inputRef.current?.focus()
+                    // }}
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{item.title}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {item.category}
-                      </span>
-                    </div>
+                    <Link to="/postsByuser/$userName" params={{ userName: item.email?.split("@")[0]! }} className="flex flex-col w-full">
+                      <span className="font-medium">{item.email?.split("@")[0]}</span>
+                    </Link>
                   </CommandItem>
                 ))}
               </CommandGroup>

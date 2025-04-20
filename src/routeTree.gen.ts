@@ -19,6 +19,8 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthedPostsRouteImport } from './routes/_authed/posts.route'
 import { Route as AuthedPostsIndexImport } from './routes/_authed/posts.index'
 import { Route as AuthedPostsPostIdImport } from './routes/_authed/posts.$postId'
+import { Route as AuthedPostsByuserUserNameRouteImport } from './routes/_authed/postsByuser.$userName.route'
+import { Route as AuthedPostsByuserUserNameIndexImport } from './routes/_authed/postsByuser.$userName.index'
 
 // Create/Update Routes
 
@@ -69,6 +71,20 @@ const AuthedPostsPostIdRoute = AuthedPostsPostIdImport.update({
   getParentRoute: () => AuthedPostsRouteRoute,
 } as any)
 
+const AuthedPostsByuserUserNameRouteRoute =
+  AuthedPostsByuserUserNameRouteImport.update({
+    id: '/postsByuser/$userName',
+    path: '/postsByuser/$userName',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+
+const AuthedPostsByuserUserNameIndexRoute =
+  AuthedPostsByuserUserNameIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedPostsByuserUserNameRouteRoute,
+  } as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -115,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPostsRouteImport
       parentRoute: typeof AuthedImport
     }
+    '/_authed/postsByuser/$userName': {
+      id: '/_authed/postsByuser/$userName'
+      path: '/postsByuser/$userName'
+      fullPath: '/postsByuser/$userName'
+      preLoaderRoute: typeof AuthedPostsByuserUserNameRouteImport
+      parentRoute: typeof AuthedImport
+    }
     '/_authed/posts/$postId': {
       id: '/_authed/posts/$postId'
       path: '/$postId'
@@ -128,6 +151,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/posts/'
       preLoaderRoute: typeof AuthedPostsIndexImport
       parentRoute: typeof AuthedPostsRouteImport
+    }
+    '/_authed/postsByuser/$userName/': {
+      id: '/_authed/postsByuser/$userName/'
+      path: '/'
+      fullPath: '/postsByuser/$userName/'
+      preLoaderRoute: typeof AuthedPostsByuserUserNameIndexImport
+      parentRoute: typeof AuthedPostsByuserUserNameRouteImport
     }
   }
 }
@@ -147,12 +177,29 @@ const AuthedPostsRouteRouteChildren: AuthedPostsRouteRouteChildren = {
 const AuthedPostsRouteRouteWithChildren =
   AuthedPostsRouteRoute._addFileChildren(AuthedPostsRouteRouteChildren)
 
+interface AuthedPostsByuserUserNameRouteRouteChildren {
+  AuthedPostsByuserUserNameIndexRoute: typeof AuthedPostsByuserUserNameIndexRoute
+}
+
+const AuthedPostsByuserUserNameRouteRouteChildren: AuthedPostsByuserUserNameRouteRouteChildren =
+  {
+    AuthedPostsByuserUserNameIndexRoute: AuthedPostsByuserUserNameIndexRoute,
+  }
+
+const AuthedPostsByuserUserNameRouteRouteWithChildren =
+  AuthedPostsByuserUserNameRouteRoute._addFileChildren(
+    AuthedPostsByuserUserNameRouteRouteChildren,
+  )
+
 interface AuthedRouteChildren {
   AuthedPostsRouteRoute: typeof AuthedPostsRouteRouteWithChildren
+  AuthedPostsByuserUserNameRouteRoute: typeof AuthedPostsByuserUserNameRouteRouteWithChildren
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPostsRouteRoute: AuthedPostsRouteRouteWithChildren,
+  AuthedPostsByuserUserNameRouteRoute:
+    AuthedPostsByuserUserNameRouteRouteWithChildren,
 }
 
 const AuthedRouteWithChildren =
@@ -165,8 +212,10 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
   '/posts': typeof AuthedPostsRouteRouteWithChildren
+  '/postsByuser/$userName': typeof AuthedPostsByuserUserNameRouteRouteWithChildren
   '/posts/$postId': typeof AuthedPostsPostIdRoute
   '/posts/': typeof AuthedPostsIndexRoute
+  '/postsByuser/$userName/': typeof AuthedPostsByuserUserNameIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -177,6 +226,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/posts/$postId': typeof AuthedPostsPostIdRoute
   '/posts': typeof AuthedPostsIndexRoute
+  '/postsByuser/$userName': typeof AuthedPostsByuserUserNameIndexRoute
 }
 
 export interface FileRoutesById {
@@ -187,8 +237,10 @@ export interface FileRoutesById {
   '/logout': typeof LogoutRoute
   '/signup': typeof SignupRoute
   '/_authed/posts': typeof AuthedPostsRouteRouteWithChildren
+  '/_authed/postsByuser/$userName': typeof AuthedPostsByuserUserNameRouteRouteWithChildren
   '/_authed/posts/$postId': typeof AuthedPostsPostIdRoute
   '/_authed/posts/': typeof AuthedPostsIndexRoute
+  '/_authed/postsByuser/$userName/': typeof AuthedPostsByuserUserNameIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -200,10 +252,20 @@ export interface FileRouteTypes {
     | '/logout'
     | '/signup'
     | '/posts'
+    | '/postsByuser/$userName'
     | '/posts/$postId'
     | '/posts/'
+    | '/postsByuser/$userName/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '' | '/login' | '/logout' | '/signup' | '/posts/$postId' | '/posts'
+  to:
+    | '/'
+    | ''
+    | '/login'
+    | '/logout'
+    | '/signup'
+    | '/posts/$postId'
+    | '/posts'
+    | '/postsByuser/$userName'
   id:
     | '__root__'
     | '/'
@@ -212,8 +274,10 @@ export interface FileRouteTypes {
     | '/logout'
     | '/signup'
     | '/_authed/posts'
+    | '/_authed/postsByuser/$userName'
     | '/_authed/posts/$postId'
     | '/_authed/posts/'
+    | '/_authed/postsByuser/$userName/'
   fileRoutesById: FileRoutesById
 }
 
@@ -256,7 +320,8 @@ export const routeTree = rootRoute
     "/_authed": {
       "filePath": "_authed.tsx",
       "children": [
-        "/_authed/posts"
+        "/_authed/posts",
+        "/_authed/postsByuser/$userName"
       ]
     },
     "/login": {
@@ -276,6 +341,13 @@ export const routeTree = rootRoute
         "/_authed/posts/"
       ]
     },
+    "/_authed/postsByuser/$userName": {
+      "filePath": "_authed/postsByuser.$userName.route.tsx",
+      "parent": "/_authed",
+      "children": [
+        "/_authed/postsByuser/$userName/"
+      ]
+    },
     "/_authed/posts/$postId": {
       "filePath": "_authed/posts.$postId.tsx",
       "parent": "/_authed/posts"
@@ -283,6 +355,10 @@ export const routeTree = rootRoute
     "/_authed/posts/": {
       "filePath": "_authed/posts.index.tsx",
       "parent": "/_authed/posts"
+    },
+    "/_authed/postsByuser/$userName/": {
+      "filePath": "_authed/postsByuser.$userName.index.tsx",
+      "parent": "/_authed/postsByuser/$userName"
     }
   }
 }

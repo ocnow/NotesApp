@@ -1,11 +1,14 @@
+import { QueryClient } from '@tanstack/react-query'
 import {
   HeadContent,
   Link,
   Outlet,
   Scripts,
   createRootRoute,
+  createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { createServerFn } from '@tanstack/react-start'
 import * as React from 'react'
 import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary.js'
@@ -29,7 +32,16 @@ const fetchUser = createServerFn({ method: 'GET' }).handler(async () => {
   }
 })
 
-export const Route = createRootRoute({
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
+export const Route = createRootRouteWithContext<{queryClient: QueryClient}>()({
   head: () => ({
     meta: [
       {
@@ -138,6 +150,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <hr />
         {children}
         <TanStackRouterDevtools position="bottom-right" />
+        <ReactQueryDevtools initialIsOpen={false} />
         <Scripts />
       </body>
     </html>

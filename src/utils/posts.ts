@@ -2,6 +2,7 @@ import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { useAppSession } from './session'
+import { getAuth } from 'firebase-admin/auth'
 
 export type PostPreviewType = {
   id: string
@@ -13,6 +14,21 @@ export type PostType = {
   title : string,
   content : string,
   createdAt : string,
+}
+
+export const postsQueryOptions = ()  => {
+  return {
+    queryKey: ['posts'],
+    queryFn: () => fetchPostsFromFirebase(),
+  }
+}
+
+export const postsByUserQueryOptions = (userName: string)  => {
+  console.log("userName we got in postsbyuser using", userName);
+  return {
+    queryKey: ['postsByUser', userName],
+    queryFn: () => fetchPostsFromFirebaseForUser({data : userName}),
+  }
 }
 
 export const fetchPostFromFirebase = createServerFn({ method: 'GET' })
@@ -49,6 +65,27 @@ export const fetchPostsFromFirebase = createServerFn({ method: 'GET' })
     const db = getFirestore();
     // Query blogs collection where userId == userUid
     const snapshot = await db.collection('blogs').where('authorId', '==', userUid).get();
+    const posts = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id : doc.id,
+        title : data.title,
+      }
+    });
+    console.log("posts found :", posts);
+    return posts;
+  });
+
+  export const fetchPostsFromFirebaseForUser = createServerFn({ method: 'GET' })
+  .validator((userName: string) => userName)
+  .handler(async ({ data: userName }): Promise<PostPreviewType[]> => {
+    console.info(`Fetching posts from Firebase for user: ${userName}`);
+    //get the user id from the user name
+    const userEmail = userName + '@gmail.com';
+    console.log("userEmail we are using", userEmail);
+    const userRecord = await getAuth().getUserByEmail(userEmail);
+    const db = getFirestore();
+    const snapshot = await db.collection('blogs').where('authorId', '==', userRecord.uid).get();
     const posts = snapshot.docs.map(doc => {
       const data = doc.data();
       return {

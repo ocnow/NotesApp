@@ -7,6 +7,7 @@ import { getAuth } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { Login } from "~/components/Login";
 import { initFirebaseAdmin } from "~/utils/firebaseConfig";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -39,10 +40,7 @@ export const loginFn = async ({
     const idToken = await userCredential.user.getIdToken();
     
     // Call the loginServerFn with the token
-    const serverResponse = await loginServerFn({ data: idToken });
-    
-    // Return both the idToken and server response
-    return { success: true, idToken, serverResponse };
+    return await loginServerFn({ data: idToken });
   } catch (error: any) {
     // Firebase Authentication error codes
     const errorCode = error.code;
@@ -55,12 +53,17 @@ export const loginFn = async ({
         return { error: true, message: 'Invalid email format.' };
       case 'auth/user-disabled':
         return { error: true, message: 'This user account has been disabled.' };
-      case 'auth/user-not-found':
-        return { error: true, userNotFound: true, message: 'No user found with this email.' };
-      case 'auth/wrong-password':
-        return { error: true, message: 'Incorrect password.' };
-      case 'auth/invalid-credential':
-        return { error: true, message: 'Invalid credentials.' };
+      case 'auth/invalid-credential':{
+        try{
+         await checkUserExists({data : data.email});
+        }catch(error : any){
+          const errCode = error?.errorInfo?.code;
+          if(errCode === 'auth/user-not-found'){
+            return { error: true, userNotFound: true, message: 'No user found with this email.' };
+          }
+          return { error: true, message: 'Incorrect password.' };
+        }
+      }
       case 'auth/too-many-requests':
         return { error: true, message: 'Too many unsuccessful login attempts. Please try again later.' };
       case 'auth/network-request-failed':
@@ -93,6 +96,11 @@ const loginServerFn = createServerFn({ method: "POST" })
         userEmail: decodedToken.email,
         firebaseUid: decodedToken.uid,
       });
+
+      return {
+        success: true,
+        message: "User authenticated successfully",
+      }
     } catch (error) {
       console.error("Error verifying Firebase token:", error);
       return {
@@ -101,6 +109,12 @@ const loginServerFn = createServerFn({ method: "POST" })
       };
     }
   });
+
+  const checkUserExists = createServerFn({ method: "POST" })
+    .validator((email : string) => email)
+    .handler(async ({data}) => {
+      await getAdminAuth().getUserByEmail(data);
+    });
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: ({ context }) => {

@@ -1,17 +1,17 @@
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useMutation } from '../hooks/useMutation'
 import { loginFn } from '../routes/_authed'
 import { Auth } from './Auth'
 import { signupFn } from '~/routes/signup'
+import { useMutation } from '@tanstack/react-query'
   
 export function Login() {
   const router = useRouter()
 
   const loginMutation = useMutation({
-    fn: loginFn,
+    mutationFn : loginFn,
     onSuccess: async (ctx) => {
-      if (!ctx.data?.error) {
+      if (!ctx.error) {
         await router.invalidate()
         router.navigate({ to: '/' })
         return
@@ -20,7 +20,7 @@ export function Login() {
   })
 
   const signupMutation = useMutation({
-    fn: useServerFn(signupFn),
+    mutationFn : useServerFn(signupFn),
   })
 
   return (
@@ -29,18 +29,16 @@ export function Login() {
       status={loginMutation.status}
       onSubmit={(e) => {
         const formData = new FormData(e.target as HTMLFormElement)
-        loginMutation.mutate({
-          data: {
-            email: formData.get('email') as string,
-            password: formData.get('password') as string,
-          },
-        })
+        loginMutation.mutate({data : {
+          email: formData.get('email') as string,
+          password: formData.get('password') as string,
+        }})
       }}
       afterSubmit={
         loginMutation.data ? (
           <>
             <div className="text-red-400">{loginMutation.data.message}</div>
-            {loginMutation.data.userNotFound ? (
+            {loginMutation.data.error && loginMutation.data.userNotFound?  (
               <div>
                 <button
                   className="text-blue-500"
