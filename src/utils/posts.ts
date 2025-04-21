@@ -2,7 +2,8 @@ import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { useAppSession } from './session'
-import { getAuth } from 'firebase-admin/auth'
+import { getAuth, UserRecord } from 'firebase-admin/auth'
+import { User } from 'firebase/auth'
 
 export type PostPreviewType = {
   id: string
@@ -81,11 +82,20 @@ export const fetchPostsFromFirebase = createServerFn({ method: 'GET' })
   .handler(async ({ data: userName }): Promise<PostPreviewType[]> => {
     console.info(`Fetching posts from Firebase for user: ${userName}`);
     //get the user id from the user name
-    const userEmail = userName + '@gmail.com';
-    console.log("userEmail we are using", userEmail);
-    const userRecord = await getAuth().getUserByEmail(userEmail);
     const db = getFirestore();
-    const snapshot = await db.collection('blogs').where('authorId', '==', userRecord.uid).get();
+    
+    const snapshot_user = await db.collection('users')
+      .where('email', '>=', userName)
+      .where('email', '<=', userName + '\uf8ff')
+      .limit(1)
+      .get();
+    
+    if (snapshot_user.empty) {
+      throw notFound();
+    }
+    const uid = snapshot_user.docs[0].data().uid;
+
+    const snapshot = await db.collection('blogs').where('authorId', '==', uid).get();
     const posts = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -95,4 +105,22 @@ export const fetchPostsFromFirebase = createServerFn({ method: 'GET' })
     });
     console.log("posts found :", posts);
     return posts;
+  });
+
+  const fetchUserFromFirebase = createServerFn({ method: 'GET' })
+  .validator((userName: string) => userName)
+  .handler(async ({ data: userName }) => {
+    const db = getFirestore();
+    const snapshot = await db.collection('users')
+      .where('email', '>=', userName)
+      .where('email', '<=', userName + '\uf8ff')
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      throw new Error('User not found');
+    }
+    
+    const user = snapshot.docs[0].data();
+    return user;
   });

@@ -25,8 +25,9 @@ export const Route = createFileRoute('/_authed/postsByuser/$userName')({
               return (
                 <li key={post.id} className="whitespace-nowrap">
                   <Link
-                    to="/posts/$postId"
+                    to="/postsByuser/$userName/$postId"
                     params={{
+                      userName: userName,
                       postId: post.id,
                     }}
                     className="block py-1 text-blue-800 hover:text-blue-600"

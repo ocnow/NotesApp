@@ -5,5 +5,5 @@ export const Route = createFileRoute('/_authed/postsByuser/$userName/')({
 })
 
 function RouteComponent() {
-  return <div>Hello "/_authed/postsByuser/$userName/"!</div>
+  return <div>Please select a post from the list</div>
 }
